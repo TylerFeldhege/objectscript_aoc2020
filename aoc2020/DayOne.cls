@@ -1,9 +1,11 @@
 Class aoc2020.DayOne Extends aoc2020.Base
 {
 
+// https://adventofcode.com/2020/day/1
+
 Parameter InputFile = "Day1Input.txt";
 
-ClassMethod Run(verbose = 0) As %Integer
+ClassMethod Run1(verbose = 0) As %Integer
 {
     //Part 1
     set stream=..GetInput(..#InputFile)
