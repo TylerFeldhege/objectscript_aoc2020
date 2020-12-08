@@ -1,4 +1,4 @@
-Class aoc2020.DayTwo Extends aoc2020.Base
+Class aoc2020.Day2 Extends aoc2020.Base
 {
 
 // https://adventofcode.com/2020/day/2

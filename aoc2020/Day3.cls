@@ -1,4 +1,4 @@
-Class aoc2020.DayThree Extends aoc2020.Base
+Class aoc2020.Day3 Extends aoc2020.Base
 {
 
 Parameter InputFile = "Day3Input.txt";
