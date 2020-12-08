@@ -3,7 +3,7 @@ Class aoc2020.DayTemplate Extends aoc2020.Base
 
 Parameter InputFile = "Day1Input.txt";
 
-ClassMethod Run(verbose = 0) As %Integer
+ClassMethod Run1(verbose = 0) As %Integer
 {
     set stream=..GetInput(..#InputFile)
 
