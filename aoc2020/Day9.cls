@@ -74,4 +74,66 @@ ClassMethod CheckSum(numbersToCheck As %String, sum As %String) As %String
     return 0
 }
 
+ClassMethod Run2(verbose = 0) As %String
+{
+    set stream=..GetInput(..#InputFile)
+
+    set sumToLookFor = ..Run1()
+    w "SumToLookFor: ",sumToLookFor,!
+
+
+    set numList = ""
+    while 'stream.AtEnd{
+        set line = stream.ReadLine()
+        set $LIST(numList,*+1) = line
+        //w line,!
+    }
+
+    for numIndex=1+1:1:$LISTLENGTH(numList){
+        set sum = $LIST(numList,numIndex)
+        set sumCheck = sum
+        set sumCheckList = ""
+        set $LIST(sumCheckList,*+1) = sum
+        for numIndex2=numIndex+1:1:$LISTLENGTH(numList){
+            set sum = sum + $LIST(numList,numIndex2)
+            set sumCheck = sumCheck_"+"_$LIST(numList,numIndex2)
+            set $LIST(sumCheckList,*+1) = $LIST(numList,numIndex2)
+
+            if sum = sumToLookFor{
+                //w "sumCheck: :",sumCheck,!
+                //w "sumCheckList : ",$LISTTOSTRING(sumCheckList,"-"),!
+
+                //Find Smallest
+                set smallest = ""
+                set biggest = ""
+                set ptr=0
+                WHILE $LISTNEXT(sumCheckList,ptr,currentNum){
+                    if smallest=""{
+                        set smallest = currentNum
+                    }else{
+                        if currentNum < smallest{
+                            set smallest = currentNum
+                        }
+                    }
+
+                    if biggest=""{
+                        set biggest = currentNum
+                    }else{
+                        if currentNum > biggest{
+                            set biggest = currentNum
+                        }
+                    }
+                }
+                //w "smallest: ",smallest,!
+                //w "biggest: ",biggest,!
+                w "Sum: ",smallest+biggest,!
+
+                return smallest+biggest
+            }
+        }
+    }
+
+    return "NOT FOUND"
+}
+
 }
