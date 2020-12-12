@@ -8,93 +8,62 @@ Parameter InputFile = "Day11Input.txt";
 ClassMethod Run1(verbose = 0) As %Integer
 {
     set stream=..GetInput(..#InputFile)
-    set columnCount = 0
+    set rowCount = 0
     while 'stream.AtEnd{
-        set columnCount = columnCount + 1
+        set rowCount = rowCount + 1
         set line = stream.ReadLine()
+        set currentRowList = ""
 
         for charCount=1:1:$LENGTH(line){
-            set $LIST(seatLayout,*+1)= columnCount_"-"_charCount_"|"_$E(line,charCount,charCount)
+            set $LIST(currentRowList,charCount)= $E(line,charCount,charCount)
         }
-        w line,!
+
+        set $LIST(seatLayout,rowCount) = currentRowList
+        //w line,!
     }
+    w "Starting Layout: ",!
+    d ..printSeatLayout(seatLayout)
 
-    set updatedSeatLayout = ""
-    set loopCount = 0
-    WHILE 1 = 1{
-        set loopCount = loopCount+1
-        w "loopCount: ",loopCount
-        //set seatLayout = updatedSeatLayout
-        
-        //Populate Seat Update List
-        set seatUpdates = ""
-        set ptr = 0
-        WHILE $LISTNEXT(seatLayout,ptr,currentSeat){
-            set seatCoordinates = $P(currentSeat,"|",1,1)
-            set seatColumn = $P(seatCoordinates,"-",1,1)
-            set seatRow = $P(seatCoordinates,"-",2,2)
-            set seatValue = $P(currentSeat,"|",2,2)
-            //w "seat Coordinates: ",seatCoordinates,!
-            //w "seat Column: ",seatColumn,!
-            //w "seat Row: ",seatRow,!
-            //w "seat Value: ",seatValue,!
 
-            set adjacentSeatsCoordinates = ..getAdjacentCoordinates(seatCoordinates)
+    While 1=1{
+        set updateList = ""
+        //Loop through each seat, and find updates
+        for rowIndex=1:1:$LISTLENGTH(seatLayout){
+            set currentRowList = $LIST(seatLayout,rowIndex)
+            for columnIndex=1:1:$LISTLENGTH(currentRowList){
+                set currentSeatValue = $LIST(currentRowList,columnIndex)
+                set adajcentSeats = ..getAdjacentCoordinates(rowIndex,columnIndex)
+                set occCount = ..getOccupiedCount(adajcentSeats,seatLayout)
 
-            w "Adajcent Count For: ",seatCoordinates,!
-            set adjacentSeatOccupiedCount = ..getOccupiedCount(adjacentSeatsCoordinates,seatLayout)
-            //w adjacentSeatOccupiedCount,!
-
-            if seatValue = "L"{
-                if adjacentSeatOccupiedCount = 0{
-                    set $LIST(seatUpdates,*+1)=seatCoordinates_"|"_"#"
+                if ((currentSeatValue = "L")&&(occCount = "0")){
+                    set $LIST(updateList,*+1) = rowIndex_"-"_columnIndex_"|"_"#"
+                }
+                if ((currentSeatValue = "#")&&(occCount >= 4)){
+                    set $LIST(updateList,*+1) = rowIndex_"-"_columnIndex_"|"_"L"
                 }
             }
-            if seatValue = "#"{
-                if adjacentSeatOccupiedCount >= 4{
-                    set $LIST(seatUpdates,*+1)=seatCoordinates_"|"_"L"
-                }
-            }
-
-            //w "seat: ",currentSeat,!
         }
 
-        //d ..printSeatLayout(seatLayout)
-        //w "Seat Changes: ",!
-        //w $LISTTOSTRING(seatUpdates,"$"),!
-
+        w "Updates: ",!
+        w $LISTTOSTRING(updateList," "),!
         set updatedSeatLayout = seatLayout
-        //d ..printSeatLayout(updatedSeatLayout)
-        w "Hit Update Phase",!
+        //Apply Updates
         set ptr=0
-        WHILE $LISTNEXT(seatUpdates,ptr,currentSeatUpdate){
-            //d ..printSeatLayout(updatedSeatLayout)
-            set currentSeatCoordinates = $P(currentSeatUpdate,"|",1,1)
-            set currentSeatColumn = $P(currentSeatCoordinates,"-",1,1)
-            set currentSeatRow = $P(currentSeatCoordinates,"-",2,2)
-            set currentSeatValue = $P(currentSeatUpdate,"|",2,2)
-            #; w "seat Coordinates: ",currentSeatCoordinates,!
-            #; w "seat Column: ",currentSeatColumn,!
-            #; w "seat Row: ",currentSeatRow,!
-            #; w "seat Value: ",currentSeatValue,!
-
-
-            for seatLayoutIndex=1:1:$LISTLENGTH(seatLayout){
-                set currentLayoutSeat = $LIST(seatLayout,seatLayoutIndex)
-                set currentLayoutSeatCoordinates = $P(currentLayoutSeat,"|",1,1)
-                if currentLayoutSeatCoordinates = currentSeatCoordinates{
-                    set $LIST(updatedSeatLayout,seatLayoutIndex) = currentSeatCoordinates_"|"_currentSeatValue
-                }
-            }
-
+        WHILE $LISTNEXT(updateList,ptr,currentUpdate){
+            set updateCoord = $P(currentUpdate,"|",1,1)
+            set updateRow = $P(updateCoord,"-",1,1)
+            set updateColumn = $P(updateCoord,"-",2,2)
+            set updateValue = $P(currentUpdate,"|",2,2)
+            set updateRowList = $LIST(updatedSeatLayout,updateRow)
+            set $LIST(updateRowList,updateColumn) = updateValue
+            set $LIST(updatedSeatLayout,updateRow) = updateRowList
         }
 
-        //w "Updated: ",!
-        //d ..printSeatLayout(updatedSeatLayout)
-        // w "Original: ",!
-        // d ..printSeatLayout(seatLayout)
+        w "Updated Layout:",!
+        d ..printSeatLayout(updatedSeatLayout)
 
-        if seatLayout = updatedSeatLayout{
+
+        if updatedSeatLayout = seatLayout{
             quit
         }else{
             set seatLayout = updatedSeatLayout
@@ -102,33 +71,35 @@ ClassMethod Run1(verbose = 0) As %Integer
 
     }
 
-    set finalCount = 0
-    for seatLayoutIndex=1:1:$LISTLENGTH(seatLayout){
-        set currentSeat = $LIST(seatLayout,seatLayoutIndex)
-        if $P(currentSeat,"|",2,2)="#"{
-            set finalCount = finalCount + 1
+    //Count Occupied Seats
+    set sum = 0
+    for ptr=0
+    WHILE $LISTNEXT(seatLayout,ptr,currentRowList){
+        set ptr2=0
+        WHILE $LISTNEXT(currentRowList,ptr2,currentSeat){
+            if currentSeat = "#"{
+                set sum = sum + 1
+            }
         }
     }
 
-    w "Final Count: ",finalCount
-    return $$$OK
+    w "Final Sum: ",sum,!
+    quit sum
 }
 
-ClassMethod getAdjacentCoordinates(seatCoordinates As %String) As %String
+ClassMethod getAdjacentCoordinates(seatRow As %String, seatColumn As %String) As %String
 {
     set returnCoords = ""
-    set seatColumn = $P(seatCoordinates,"-",1,1)
-    set seatRow = $P(seatCoordinates,"-",2,2)
-    set $LIST(returnCoords,*+1) = (seatColumn-1)_"-"_(seatRow-1)
-    set $LIST(returnCoords,*+1) = (seatColumn-1)_"-"_(seatRow)
-    set $LIST(returnCoords,*+1) = (seatColumn-1)_"-"_(seatRow+1)
+    set $LIST(returnCoords,*+1) = (seatRow-1)_"-"_(seatColumn-1)
+    set $LIST(returnCoords,*+1) = (seatRow-1)_"-"_(seatColumn)
+    set $LIST(returnCoords,*+1) = (seatRow-1)_"-"_(seatColumn+1)
 
-    set $LIST(returnCoords,*+1) = (seatColumn)_"-"_(seatRow-1)
-    set $LIST(returnCoords,*+1) = (seatColumn)_"-"_(seatRow+1)
+    set $LIST(returnCoords,*+1) = (seatRow)_"-"_(seatColumn-1)
+    set $LIST(returnCoords,*+1) = (seatRow)_"-"_(seatColumn+1)
 
-    set $LIST(returnCoords,*+1) = (seatColumn+1)_"-"_(seatRow-1)
-    set $LIST(returnCoords,*+1) = (seatColumn+1)_"-"_(seatRow)
-    set $LIST(returnCoords,*+1) = (seatColumn+1)_"-"_(seatRow+1)
+    set $LIST(returnCoords,*+1) = (seatRow+1)_"-"_(seatColumn-1)
+    set $LIST(returnCoords,*+1) = (seatRow+1)_"-"_(seatColumn)
+    set $LIST(returnCoords,*+1) = (seatRow+1)_"-"_(seatColumn+1)
 
     return returnCoords
 }
@@ -137,14 +108,17 @@ ClassMethod getOccupiedCount(seatListCoordinates As %String, seatLayout As %Stri
 {
     set count = 0
     set ptr=0
-    WHILE $LISTNEXT(seatLayout,ptr,currentSeat){
-        set seatCoordinates = $P(currentSeat,"|",1,1)
-        set seatValue = $P(currentSeat,"|",2,2)
+    WHILE $LISTNEXT(seatListCoordinates,ptr,currentCoordinate){
+        set seatRow = $P(currentCoordinate,"-",1,1)
+        set seatColumn = $P(currentCoordinate,"-",2,2)
+        //w "Occupied Check Coord: ",seatRow,"-",seatColumn,!
 
-        set ptr2=0
-        WHILE $LISTNEXT(seatListCoordinates,ptr2,currentAdajcentSeatCoordinates){
-            if currentAdajcentSeatCoordinates = seatCoordinates{
-                if seatValue = "#"{
+        if ((1<=seatRow)&&($LISTLENGTH(seatLayout)>=seatRow)){
+            set layoutRow = $LIST(seatLayout,seatRow)
+            if ((1<=seatColumn)&&($LISTLENGTH(layoutRow)>=seatColumn)){
+                set layoutValue = $LIST(layoutRow,seatColumn)
+                //w "Layout Value: ",layoutValue,!
+                if layoutValue = "#"{
                     set count = count + 1
                 }
             }
@@ -156,16 +130,15 @@ ClassMethod getOccupiedCount(seatListCoordinates As %String, seatLayout As %Stri
 
 ClassMethod printSeatLayout(seatLayout As %String)
 {
-    set currentColumn = 1
-    set ptr = 0
-    WHILE $LISTNEXT(seatLayout,ptr,currentSeat){
-        if currentColumn '= $P(currentSeat,"-",1,1){
-            set currentColumn = $P(currentSeat,"-",1,1)
-            w !
-        }
-        w $P(currentSeat,"|",2,2)
+    for rowIndex=1:1:$LISTLENGTH(seatLayout){
+        set currentRowList = $LIST(seatLayout,rowIndex)
+        w $LISTTOSTRING(currentRowList,"")
+        #; for columnIndex=1:1:currentRowList{
+        #;     w $LIST(currentRowList,columnIndex)
+        #; }
+        w !
     }
-    w !,!
+    w !
 }
 
 }
